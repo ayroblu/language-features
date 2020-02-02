@@ -11,3 +11,8 @@ console.log('code goes here')
 ```
 
 Note the second code blog which prints the stdout and the compiler errors
+
+TODO:
+-----
+Need to workout the regex patterns for rust
+

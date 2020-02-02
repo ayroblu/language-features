@@ -1,5 +1,6 @@
 # Example from
 # https://tech.davis-hansson.com/p/make/
+# Also consider reference at: http://www.gnu.org/software/make/manual/
 
 ## Initial setup
 SHELL := bash
@@ -19,8 +20,25 @@ endif
 # 2. Run the update-markdown func
 
 # Default - top level rule is what gets ran when you run just `make`
-build: out/image-id
+build: target/release/language-features
 .PHONY: build
+
+run: target/release/language-features
+> target/release/language-features
+.PHONY: run
+
+run-tsc: .build/typescript/dist/.ts-built.sentinel
+.PHONY: run-tsc
+
+.build/typescript/dist/.ts-built.sentinel: $(shell rg --files typescript)
+> mkdir -p $(@D)
+> rsync -a --delete ./typescript ./.build/
+> cd ./.build/typescript
+> rm -rf ./dist
+> yarn
+> npx tsc
+> cd -
+> touch $@
 
 test: tmp/.tests-passed.sentinel
 .PHONY: test
@@ -28,11 +46,12 @@ test: tmp/.tests-passed.sentinel
 # Clean up the output directories; since all the sentinel files go under tmp, this will cause everything to get rebuilt
 clean:
 > rm -rf tmp
-> rm -rf out
+> rm -rf target
+> rm -rf .build
 .PHONY: clean
 
 # Tests - re-ran if any file under src has been changed since tmp/.tests-passed.sentinel was last touched
-tmp/.tests-passed.sentinel: $(shell find typescript -type f)
+tmp/.tests-passed.sentinel: $(shell find src -type f)
 > mkdir -p $(@D)
 > npx gulp test:unit:js
 > touch $@
@@ -42,6 +61,9 @@ tmp/.packed.sentinel: tmp/.tests-passed.sentinel
 > mkdir -p $(@D)
 > webpack
 > touch $@
+
+target/release/language-features: $(shell find src -type f)
+> cargo build --release
 
 # Docker image - re-built if the webpack output has been rebuilt
 #out/image-id: tmp/.packed.sentinel
