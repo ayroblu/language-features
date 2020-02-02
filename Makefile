@@ -20,7 +20,7 @@ endif
 # 2. Run the update-markdown func
 
 # Default - top level rule is what gets ran when you run just `make`
-build: target/release/language-features
+build: target/release/language-features run-tsc
 .PHONY: build
 
 run: target/release/language-features
@@ -36,7 +36,10 @@ run-tsc: .build/typescript/dist/.ts-built.sentinel
 > cd ./.build/typescript
 > rm -rf ./dist
 > yarn
-> npx tsc
+> RESULT=$$(npx tsc 2>&1 || ERROR=true)
+> echo '-------'
+> echo $$RESULT
+> echo '-------'
 > cd -
 > touch $@
 
