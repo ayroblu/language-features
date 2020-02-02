@@ -1,0 +1,49 @@
+# Example from
+# https://tech.davis-hansson.com/p/make/
+
+## Initial setup
+SHELL := bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+.DELETE_ON_ERROR:
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
+
+ifeq ($(origin .RECIPEPREFIX), undefined)
+  $(error This Make does not support .RECIPEPREFIX. Please use GNU Make 4.0 or later)
+endif
+.RECIPEPREFIX = >
+
+## ------------------------- Main part of the build file
+
+# Default - top level rule is what gets ran when you run just `make`
+build: out/image-id
+.PHONY: build
+
+test: tmp/.tests-passed.sentinel
+.PHONY: test
+
+# Clean up the output directories; since all the sentinel files go under tmp, this will cause everything to get rebuilt
+clean:
+> rm -rf tmp
+> rm -rf out
+.PHONY: clean
+
+# Tests - re-ran if any file under src has been changed since tmp/.tests-passed.sentinel was last touched
+tmp/.tests-passed.sentinel: $(shell find typescript -type f)
+> mkdir -p $(@D)
+> npx gulp test:unit:js
+> touch $@
+
+# Webpack - re-built if the tests have been rebuilt (and so, by proxy, whenever the source files have changed)
+tmp/.packed.sentinel: tmp/.tests-passed.sentinel
+> mkdir -p $(@D)
+> webpack
+> touch $@
+
+# Docker image - re-built if the webpack output has been rebuilt
+#out/image-id: tmp/.packed.sentinel
+#> mkdir -p $(@D)
+#> image_id="example.com/my-app:$$(pwgen -1)"
+#> docker build --tag="$${image_id}"
+#> echo "$${image_id}" > out/image-id
