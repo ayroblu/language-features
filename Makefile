@@ -15,6 +15,8 @@ endif
 .RECIPEPREFIX = >
 
 ## ------------------------- Main part of the build file
+# 1. Build the rust project
+# 2. Run the update-markdown func
 
 # Default - top level rule is what gets ran when you run just `make`
 build: out/image-id
