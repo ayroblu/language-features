@@ -27,10 +27,13 @@ run: target/release/language-features
 > target/release/language-features
 .PHONY: run
 
-run-tsc: .build/typescript/dist/.ts-built.sentinel
+run-tsc: .build/typescript/.ts-built.sentinel
 .PHONY: run-tsc
 
-.build/typescript/dist/.ts-built.sentinel: $(shell rg --files typescript)
+run-rust: .build/rust/.rust-built.sentinel
+.PHONY: run-rust
+
+.build/typescript/.ts-built.sentinel: $(shell rg --files typescript)
 > mkdir -p $(@D)
 > rsync -a --delete ./typescript ./.build/
 > cd ./.build/typescript
@@ -43,8 +46,16 @@ run-tsc: .build/typescript/dist/.ts-built.sentinel
 > cd -
 > touch $@
 
-test: tmp/.tests-passed.sentinel
-.PHONY: test
+.build/rust/.rust-built.sentinel: build $(shell rg --files rust)
+> mkdir -p $(@D)
+> LANG=$$(basename "$(@D)")
+> rsync -a --delete "./$$LANG" ./.build/
+> ./target/release/language-features ./.build/rust/README.md
+> cp ./.build/rust/README.md ./rust/README.md
+> touch $@
+
+#test: tmp/.tests-passed.sentinel
+#.PHONY: test
 
 # Clean up the output directories; since all the sentinel files go under tmp, this will cause everything to get rebuilt
 clean:
@@ -54,16 +65,16 @@ clean:
 .PHONY: clean
 
 # Tests - re-ran if any file under src has been changed since tmp/.tests-passed.sentinel was last touched
-tmp/.tests-passed.sentinel: $(shell find src -type f)
-> mkdir -p $(@D)
-> npx gulp test:unit:js
-> touch $@
+#tmp/.tests-passed.sentinel: $(shell find src -type f)
+#> mkdir -p $(@D)
+#> npx gulp test:unit:js
+#> touch $@
 
 # Webpack - re-built if the tests have been rebuilt (and so, by proxy, whenever the source files have changed)
-tmp/.packed.sentinel: tmp/.tests-passed.sentinel
-> mkdir -p $(@D)
-> webpack
-> touch $@
+#tmp/.packed.sentinel: tmp/.tests-passed.sentinel
+#> mkdir -p $(@D)
+#> webpack
+#> touch $@
 
 target/release/language-features: $(shell find src -type f)
 > cargo build --release
